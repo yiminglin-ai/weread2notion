@@ -370,6 +370,7 @@ if __name__ == "__main__":
     latest_sort = get_sort()
     books = get_notebooklist()
     readwise_client = Readwise(options.readwise_token)
+    rw_highlights = []
     if books != None:
         for index, book in enumerate(books):
             sort = book["sort"]
@@ -413,14 +414,14 @@ if __name__ == "__main__":
             results = add_children(id, children)
             if len(grandchild) > 0 and results != None:
                 add_grandchild(grandchild, results)
-            rw_highlights = readwise_client.convert_weread_hilights_to_readwise(
+            rw_highlights.extend(readwise_client.convert_weread_hilights_to_readwise(
                 title=title,
                 author=author,
                 chapter=chapter,
                 bookmark_list=bookmark_list,
                 source_url=f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}",
                 cover=cover,
-            )
-            if rw_highlights:
-                print(rw_highlights[0])
-                readwise_client.create_highlights(rw_highlights)
+            ))
+    if rw_highlights:
+        print(rw_highlights[0])
+        readwise_client.create_highlights(rw_highlights)
