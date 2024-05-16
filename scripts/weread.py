@@ -1,16 +1,20 @@
 import argparse
+import hashlib
 import logging
 import os
 import re
 import time
-from notion_client import Client
-import requests
-from requests.utils import cookiejar_from_dict
-from http.cookies import SimpleCookie
 from datetime import datetime, timezone
-import hashlib
+from http.cookies import SimpleCookie
+
+import requests
+from notion_client import Client
+from requests.utils import cookiejar_from_dict
+
 from readwise import Readwise
-from utils import get_callout, get_date, get_file, get_heading, get_icon, get_multi_select, get_number, get_quote, get_rich_text, get_select, get_table_of_contents, get_title, get_url
+from utils import (get_callout, get_date, get_file, get_heading, get_icon,
+                   get_multi_select, get_number, get_quote, get_rich_text,
+                   get_select, get_table_of_contents, get_title, get_url)
 
 WEREAD_URL = "https://weread.qq.com/"
 WEREAD_NOTEBOOKS_URL = "https://i.weread.qq.com/user/notebooks"

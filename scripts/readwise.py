@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from json import dump
 from typing import Callable, Dict, List, Optional, Union
+
 import requests
 
 
@@ -158,8 +159,9 @@ class Readwise:
                 markText = data.get("markText")
                 createTime = float(data.get("createTime"))
                 # convert unixtime to UTC format Example: "2020-07-14T20:11:24+00:00"
-                createTime = datetime.utcfromtimestamp(createTime).strftime(
-                    '%Y-%m-%dT%H:%M:%S+00:00')
+                createTime = datetime.fromtimestamp(
+                    createTime,
+                    tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
                 location = 0 if (data.get("range", "") == ""
                                  or data.get("range").split("-")[0] == ""
                                  ) else int(data.get("range").split("-")[0])

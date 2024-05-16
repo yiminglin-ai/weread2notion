@@ -8,14 +8,12 @@ def get_heading(level, content):
     return {
         "type": heading,
         heading: {
-            "rich_text": [
-                {
-                    "type": "text",
-                    "text": {
-                        "content": content,
-                    },
-                }
-            ],
+            "rich_text": [{
+                "type": "text",
+                "text": {
+                    "content": content,
+                },
+            }],
             "color": "default",
             "is_toggleable": False,
         },
@@ -24,7 +22,12 @@ def get_heading(level, content):
 
 def get_table_of_contents():
     """获取目录"""
-    return {"type": "table_of_contents", "table_of_contents": {"color": "default"}}
+    return {
+        "type": "table_of_contents",
+        "table_of_contents": {
+            "color": "default"
+        }
+    }
 
 
 def get_title(content):
@@ -40,7 +43,15 @@ def get_url(url):
 
 
 def get_file(url):
-    return {"files": [{"type": "external", "name": "Cover", "external": {"url": url}}]}
+    return {
+        "files": [{
+            "type": "external",
+            "name": "Cover",
+            "external": {
+                "url": url
+            }
+        }]
+    }
 
 
 def get_multi_select(names):
@@ -72,12 +83,12 @@ def get_quote(content):
     return {
         "type": "quote",
         "quote": {
-            "rich_text": [
-                {
-                    "type": "text",
-                    "text": {"content": content},
-                }
-            ],
+            "rich_text": [{
+                "type": "text",
+                "text": {
+                    "content": content
+                },
+            }],
             "color": "default",
         },
     }
@@ -108,15 +119,15 @@ def get_callout(content, style, colorStyle, reviewId):
     return {
         "type": "callout",
         "callout": {
-            "rich_text": [
-                {
-                    "type": "text",
-                    "text": {
-                        "content": content,
-                    },
-                }
-            ],
-            "icon": {"emoji": emoji},
+            "rich_text": [{
+                "type": "text",
+                "text": {
+                    "content": content,
+                },
+            }],
+            "icon": {
+                "emoji": emoji
+            },
             "color": color,
         },
     }

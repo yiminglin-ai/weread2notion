@@ -1,5 +1,7 @@
 import argparse
+
 import requests
+
 from readwise import Readwise
 from weread import *
 

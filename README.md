@@ -1,6 +1,6 @@
 # 将微信读书划线和笔记同步到Notion 
 
-Sync WeRead highlights and notes to Notion.
+Sync WeRead highlights and notes to Notions and Readwise.
 
 ## Reference
 
