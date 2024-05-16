@@ -1,6 +1,14 @@
-# 将微信读书划线和笔记同步到Notion 
+# Sync WeRead highlights and notes to Notions and Readwise
 
-Sync WeRead highlights and notes to Notions and Readwise.
+I cobbled together code snippets from various sources to create a somewhat fragile project that synchronizes my highlights from WeRead to Notion and Readwise.
+Readwise excels at reviewing highlights, and I highly recommend it.
+
+## WeRead Progress
+
+
+![](./OUT_FOLDER/weread.svg)
+
+
 
 ## Reference
 
