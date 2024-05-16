@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 import re
@@ -8,7 +7,7 @@ from notion_client import Client
 import requests
 from requests.utils import cookiejar_from_dict
 from http.cookies import SimpleCookie
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 from readwise import Readwise
 from utils import get_callout, get_date, get_file, get_heading, get_icon, get_multi_select, get_number, get_quote, get_rich_text, get_select, get_table_of_contents, get_title, get_url
@@ -29,7 +28,9 @@ def parse_cookie_string(cookie_string):
     cookiejar = None
     for key, morsel in cookie.items():
         cookies_dict[key] = morsel.value
-        cookiejar = cookiejar_from_dict(cookies_dict, cookiejar=None, overwrite=True)
+        cookiejar = cookiejar_from_dict(cookies_dict,
+                                        cookiejar=None,
+                                        overwrite=True)
     return cookiejar
 
 
@@ -41,14 +42,18 @@ def get_bookmark_list(bookId):
         updated = r.json().get("updated")
         updated = sorted(
             updated,
-            key=lambda x: (x.get("chapterUid", 1), int(x.get("range").split("-")[0])),
+            key=lambda x:
+            (x.get("chapterUid", 1), int(x.get("range").split("-")[0])),
         )
         return r.json()["updated"]
     return None
 
 
 def get_read_info(bookId):
-    params = dict(bookId=bookId, readingDetail=1, readingBookIndex=1, finishedDate=1)
+    params = dict(bookId=bookId,
+                  readingDetail=1,
+                  readingBookIndex=1,
+                  finishedDate=1)
     r = session.get(WEREAD_READ_INFO_URL, params=params)
     if r.ok:
         return r.json()
@@ -96,33 +101,40 @@ def get_chapter_info(bookId):
     """获取章节信息"""
     body = {"bookIds": [bookId], "synckeys": [0], "teenmode": 0}
     r = session.post(WEREAD_CHAPTER_INFO, json=body)
-    if (
-        r.ok
-        and "data" in r.json()
-        and len(r.json()["data"]) == 1
-        and "updated" in r.json()["data"][0]
-    ):
+    if (r.ok and "data" in r.json() and len(r.json()["data"]) == 1
+            and "updated" in r.json()["data"][0]):
         update = r.json()["data"][0]["updated"]
         return {item["chapterUid"]: item for item in update}
     return None
 
 
-def insert_to_notion(bookName, bookId, cover, sort, author, isbn, rating, categories):
+def insert_to_notion(bookName, bookId, cover, sort, author, isbn, rating,
+                     categories):
     """插入到notion"""
     time.sleep(0.3)
     parent = {"database_id": database_id, "type": "database_id"}
     properties = {
-        "BookName":get_title(bookName),
-        "BookId": get_rich_text(bookId),
-        "ISBN": get_rich_text(isbn),
-        "URL": get_url(f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}"),
-        "Author": get_rich_text(author),
-        "Sort": get_number(sort),
-        "Rating": get_number(rating),
-        "Cover": get_file(cover),
+        "BookName":
+        get_title(bookName),
+        "BookId":
+        get_rich_text(bookId),
+        "ISBN":
+        get_rich_text(isbn),
+        "URL":
+        get_url(
+            f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}"
+        ),
+        "Author":
+        get_rich_text(author),
+        "Sort":
+        get_number(sort),
+        "Rating":
+        get_number(rating),
+        "Cover":
+        get_file(cover),
     }
     if categories != None:
-        properties["Categories"] =get_multi_select(categories)
+        properties["Categories"] = get_multi_select(categories)
     read_info = get_read_info(bookId=bookId)
     if read_info != None:
         markedStatus = read_info.get("markedStatus", 0)
@@ -139,14 +151,17 @@ def insert_to_notion(bookName, bookId, cover, sort, author, isbn, rating, catego
         properties["ReadingTime"] = get_rich_text(format_time)
         properties["Progress"] = get_number(readingProgress)
         if "finishedDate" in read_info:
-            properties["Date"] = get_date(datetime.utcfromtimestamp(
-                        read_info.get("finishedDate")
-                    ).strftime("%Y-%m-%d %H:%M:%S"))
+            properties["Date"] = get_date(
+                datetime.fromtimestamp(
+                    read_info.get("finishedDate"),
+                    tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
 
     if cover.startswith("http"):
         icon = get_icon(cover)
     # notion api 限制100个block
-    response = client.pages.create(parent=parent, icon=icon, properties=properties)
+    response = client.pages.create(parent=parent,
+                                   icon=icon,
+                                   properties=properties)
     id = response["id"]
     return id
 
@@ -156,8 +171,7 @@ def add_children(id, children):
     for i in range(0, len(children) // 100 + 1):
         time.sleep(0.3)
         response = client.blocks.children.append(
-            block_id=id, children=children[i * 100 : (i + 1) * 100]
-        )
+            block_id=id, children=children[i * 100:(i + 1) * 100])
         results.extend(response.get("results"))
     return results if len(results) == len(children) else None
 
@@ -185,17 +199,17 @@ def get_notebooklist():
 def get_sort():
     """获取database中的最新时间"""
     filter = {"property": "Sort", "number": {"is_not_empty": True}}
-    sorts = [
-        {
-            "property": "Sort",
-            "direction": "descending",
-        }
-    ]
-    response = client.databases.query(
-        database_id=database_id, filter=filter, sorts=sorts, page_size=1
-    )
+    sorts = [{
+        "property": "Sort",
+        "direction": "descending",
+    }]
+    response = client.databases.query(database_id=database_id,
+                                      filter=filter,
+                                      sorts=sorts,
+                                      page_size=1)
     if len(response.get("results")) == 1:
-        return response.get("results")[0].get("properties").get("Sort").get("number")
+        return response.get("results")[0].get("properties").get("Sort").get(
+            "number")
     return 0
 
 
@@ -216,11 +230,11 @@ def get_children(chapter, summary, bookmark_list):
                 # 添加章节
                 children.append(
                     get_heading(
-                        chapter.get(key).get("level"), chapter.get(key).get("title")
-                    )
-                )
+                        chapter.get(key).get("level"),
+                        chapter.get(key).get("title")))
             for i in value:
-                if data.get("reviewId") == None and "style" in i and "colorStyle" in i:
+                if data.get("reviewId"
+                            ) == None and "style" in i and "colorStyle" in i:
                     if i.get("style") not in styles:
                         continue
                     if i.get("colorStyle") not in colors:
@@ -229,12 +243,11 @@ def get_children(chapter, summary, bookmark_list):
                 for j in range(0, len(markText) // 2000 + 1):
                     children.append(
                         get_callout(
-                            markText[j * 2000 : (j + 1) * 2000],
+                            markText[j * 2000:(j + 1) * 2000],
                             i.get("style"),
                             i.get("colorStyle"),
                             i.get("reviewId"),
-                        )
-                    )
+                        ))
                 if i.get("abstract") != None and i.get("abstract") != "":
                     quote = get_quote(i.get("abstract"))
                     grandchild[len(children) - 1] = quote
@@ -242,11 +255,8 @@ def get_children(chapter, summary, bookmark_list):
     else:
         # 如果没有章节信息
         for data in bookmark_list:
-            if (
-                data.get("reviewId") == None
-                and "style" in data
-                and "colorStyle" in data
-            ):
+            if (data.get("reviewId") == None and "style" in data
+                    and "colorStyle" in data):
                 if data.get("style") not in styles:
                     continue
                 if data.get("colorStyle") not in colors:
@@ -255,12 +265,11 @@ def get_children(chapter, summary, bookmark_list):
             for i in range(0, len(markText) // 2000 + 1):
                 children.append(
                     get_callout(
-                        markText[i * 2000 : (i + 1) * 2000],
+                        markText[i * 2000:(i + 1) * 2000],
                         data.get("style"),
                         data.get("colorStyle"),
                         data.get("reviewId"),
-                    )
-                )
+                    ))
     if summary != None and len(summary) > 0:
         children.append(get_heading(1, "点评"))
         for i in summary:
@@ -268,12 +277,11 @@ def get_children(chapter, summary, bookmark_list):
             for j in range(0, len(content) // 2000 + 1):
                 children.append(
                     get_callout(
-                        content[j * 2000 : (j + 1) * 2000],
+                        content[j * 2000:(j + 1) * 2000],
                         i.get("style"),
                         i.get("colorStyle"),
                         i.get("review").get("reviewId"),
-                    )
-                )
+                    ))
     return children, grandchild
 
 
@@ -283,7 +291,7 @@ def transform_id(book_id):
     if re.match("^\d*$", book_id):
         ary = []
         for i in range(0, id_length, 9):
-            ary.append(format(int(book_id[i : min(i + 9, id_length)]), "x"))
+            ary.append(format(int(book_id[i:min(i + 9, id_length)]), "x"))
         return "3", ary
 
     result = ""
@@ -311,7 +319,7 @@ def calculate_book_str_id(book_id):
             result += "g"
 
     if len(result) < 20:
-        result += digest[0 : 20 - len(result)]
+        result += digest[0:20 - len(result)]
 
     md5 = hashlib.md5()
     md5.update(result.encode("utf-8"))
@@ -379,7 +387,8 @@ if __name__ == "__main__":
             book = book.get("book")
             title = book.get("title")
             cover = book.get("cover")
-            if book.get("author") == "公众号" and book.get("cover").endswith("/0"):
+            if book.get("author") == "公众号" and book.get("cover").endswith(
+                    "/0"):
                 cover += ".jpg"
             if cover.startswith("http") and not cover.endswith(".jpg"):
                 path = download_image(cover)
@@ -394,9 +403,8 @@ if __name__ == "__main__":
             print(f"正在同步 {title} ,一共{len(books)}本，当前是第{index+1}本。")
             check(bookId)
             isbn, rating = get_bookinfo(bookId)
-            id = insert_to_notion(
-                title, bookId, cover, sort, author, isbn, rating, categories
-            )
+            id = insert_to_notion(title, bookId, cover, sort, author, isbn,
+                                  rating, categories)
             chapter = get_chapter_info(bookId)
             bookmark_list = get_bookmark_list(bookId)
             summary, reviews = get_review_list(bookId)
@@ -405,23 +413,25 @@ if __name__ == "__main__":
                 bookmark_list,
                 key=lambda x: (
                     x.get("chapterUid", 1),
-                    0
-                    if (x.get("range", "") == "" or x.get("range").split("-")[0] == "")
-                    else int(x.get("range").split("-")[0]),
+                    0 if (x.get("range", "") == "" or x.get("range").split("-")
+                          [0] == "") else int(x.get("range").split("-")[0]),
                 ),
             )
-            children, grandchild = get_children(chapter, summary, bookmark_list)
+            children, grandchild = get_children(chapter, summary,
+                                                bookmark_list)
             results = add_children(id, children)
             if len(grandchild) > 0 and results != None:
                 add_grandchild(grandchild, results)
-            rw_highlights.extend(readwise_client.convert_weread_hilights_to_readwise(
-                title=title,
-                author=author,
-                chapter=chapter,
-                bookmark_list=bookmark_list,
-                source_url=f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}",
-                cover=cover,
-            ))
+            rw_highlights.extend(
+                readwise_client.convert_weread_hilights_to_readwise(
+                    title=title,
+                    author=author,
+                    chapter=chapter,
+                    bookmark_list=bookmark_list,
+                    source_url=
+                    f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}",
+                    cover=cover,
+                ))
     if rw_highlights:
         print(rw_highlights[0])
         readwise_client.create_highlights(rw_highlights)
