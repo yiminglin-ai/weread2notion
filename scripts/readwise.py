@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from json import dump
 from typing import Callable, Dict, List, Optional, Union
-
 import requests
 
 
@@ -110,7 +109,7 @@ class Readwise:
         bookmark_list,
         source_url,
         cover,
-    ):  
+    ):
         highlights = []
         if author == "公众号":
             cat = Category.articles.name
@@ -126,15 +125,17 @@ class Readwise:
                 d[chapterUid].append(data)
             for key, value in d.items():
                 ch = chapter.get(key)
-                chapter_title=ch.get("title") if ch else ""
+                chapter_title = ch.get("title") if ch else ""
                 for data in value:
                     createTime = float(data.get("createTime"))
                     # convert unixtime to UTC format Example: "2020-07-14T20:11:24+00:00"
-                    createTime = datetime.utcfromtimestamp(createTime).strftime(
-                        '%Y-%m-%dT%H:%M:%S+00:00')
-                    location = 0 if (data.get("range", "") == "" or
-                                    data.get("range").split("-")[0] == "") else int(
-                                        data.get("range").split("-")[0])
+                    createTime = datetime.fromtimestamp(
+                        createTime,
+                        timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+                    location = 0 if (
+                        data.get("range", "") == ""
+                        or data.get("range").split("-")[0] == "") else int(
+                            data.get("range").split("-")[0])
                     markText = chapter_title + '\n\n' + data.get("markText")
                     abstract = data.get("abstract")
                     if abstract and isinstance(abstract, str):
@@ -150,7 +151,7 @@ class Readwise:
                             image_url=cover,
                             location=location,
                             location_type="order",
-                    ))
+                        ))
 
         else:
             for data in bookmark_list:
@@ -159,9 +160,9 @@ class Readwise:
                 # convert unixtime to UTC format Example: "2020-07-14T20:11:24+00:00"
                 createTime = datetime.utcfromtimestamp(createTime).strftime(
                     '%Y-%m-%dT%H:%M:%S+00:00')
-                location = 0 if (data.get("range", "") == "" or
-                                data.get("range").split("-")[0] == "") else int(
-                                    data.get("range").split("-")[0])
+                location = 0 if (data.get("range", "") == ""
+                                 or data.get("range").split("-")[0] == ""
+                                 ) else int(data.get("range").split("-")[0])
                 highlights.append(
                     ReadwiseHighlight(
                         text=markText,
